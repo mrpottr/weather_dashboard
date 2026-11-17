@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atmos // Australian Weather Intelligence</title>
+  <meta name="description" content="Futuristic, responsive weather dashboard UI concept aligned to the CSP3341 Part B functional requirements." />
+  <style>
+    :root{
+      --bg:#071019;
+      --bg2:#0b1521;
+      --panel:rgba(11,24,35,.70);
+      --panel-strong:rgba(10,20,30,.90);
+      --glass:rgba(255,255,255,.065);
+      --glass-2:rgba(255,255,255,.095);
+      --border:rgba(255,255,255,.12);
+      --text:#f4f8fb;
+      --muted:#9db0bf;
+      --dim:#6e8496;
+      --accent:#72f2da;
+      --accent2:#8ca7ff;
+      --warning:#ffc56d;
+      --danger:#ff7187;
+      --success:#80eea2;
+      --shadow:0 24px 70px rgba(0,0,0,.34);
+      --radius:24px;
+      --radius-sm:15px;
+      --sidebar:252px;
+      --topbar:76px;
+    }
+    body.theme-light{
+      --bg:#edf3f6;
+      --bg2:#e3ebef;
+      --panel:rgba(255,255,255,.78);
+      --panel-strong:rgba(255,255,255,.94);
+      --glass:rgba(8,28,41,.055);
+      --glass-2:rgba(8,28,41,.09);
+      --border:rgba(8,28,41,.12);
+      --text:#11212d;
+      --muted:#5e7180;
+      --dim:#7f919e;
+      --shadow:0 24px 60px rgba(43,67,80,.16);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+    body{overflow-x:hidden}
+    button,input,select{font:inherit}
+    button{border:0}
+    .hidden{display:none!important}
+    .app-noise{position:fixed;inset:0;pointer-events:none;opacity:.18;mix-blend-mode:soft-light;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");z-index:100}
+    .aurora{position:fixed;inset:-15%;pointer-events:none;z-index:0;filter:blur(60px);opacity:.22;background:
+      radial-gradient(ellipse at 20% 25%, #6effe1 0, transparent 33%),
+      radial-gradient(ellipse at 80% 18%, #6887ff 0, transparent 33%),
+      radial-gradient(ellipse at 60% 80%, #b36eff 0, transparent 26%);
+      animation:drift 18s ease-in-out infinite alternate}
+    @keyframes drift{to{transform:translate(3%,2%) scale(1.08) rotate(2deg)}}
+    @keyframes float{50%{transform:translateY(-5px)}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse{50%{box-shadow:0 0 0 10px rgba(114,242,218,0)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .splash{
+      position:fixed;inset:0;z-index:200;background:#050b11;display:grid;place-items:center;overflow:hidden;
+      transition:opacity .7s ease, visibility .7s ease
+    }
+    .splash.hide{opacity:0;visibility:hidden}
+    .splash-grid{position:absolute;inset:0;background:
+      linear-gradient(rgba(114,242,218,.05) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(114,242,218,.05) 1px,transparent 1px);
+      background-size:52px 52px;transform:perspective(600px) rotateX(60deg) scale(1.6);transform-origin:center bottom;animation:gridShift 5s linear infinite}
+    @keyframes gridShift{to{background-position:0 52px,52px 0}}
+    .splash-glow{position:absolute;width:580px;height:580px;border-radius:50%;background:radial-gradient(circle,rgba(114,242,218,.22),transparent 65%);filter:blur(10px);animation:pulseGlow 3s ease-in-out infinite}
+    @keyframes pulseGlow{50%{transform:scale(1.11);opacity:.72}}
+    .brand-mark{width:92px;height:92px;border:1px solid rgba(114,242,218,.55);border-radius:28px;display:grid;place-items:center;background:rgba(114,242,218,.06);box-shadow:0 0 50px rgba(114,242,218,.15),inset 0 0 30px rgba(114,242,218,.07);position:relative;margin:0 auto 24px;animation:float 3.4s ease-in-out infinite}
+    .brand-mark svg{width:54px;height:54px}
+    .splash-content{position:relative;z-index:2;text-align:center}
+    .splash-kicker{color:var(--accent);text-transform:uppercase;letter-spacing:.28em;font-size:11px}
+    .splash-title{font-size:clamp(38px,7vw,76px);line-height:.95;margin:10px 0 12px;letter-spacing:-.06em}
+    .splash-sub{color:#8ea2b1;font-size:14px}
+    .boot-line{width:min(320px,68vw);height:3px;background:#17242f;border-radius:99px;overflow:hidden;margin:30px auto 12px}
+    .boot-line span{display:block;height:100%;width:0;background:linear-gradient(90deg,#72f2da,#8ca7ff);animation:boot 2.1s cubic-bezier(.4,.1,.2,1) forwards}
+    @keyframes boot{to{width:100%}}
+    .boot-status{font-size:11px;color:#6c8595;letter-spacing:.12em;text-transform:uppercase}
+    .auth-wrap{min-height:100vh;display:grid;place-items:center;padding:28px;position:relative;z-index:1}
+    .auth-card{width:min(1120px,100%);min-height:690px;border:1px solid var(--border);border-radius:32px;background:var(--panel);backdrop-filter:blur(28px);box-shadow:var(--shadow);display:grid;grid-template-columns:1.15fr .85fr;overflow:hidden;animation:fadeUp .8s ease both}
+    .auth-visual{position:relative;padding:48px;display:flex;flex-direction:column;justify-content:space-between;min-height:690px;background-size:cover;background-position:center;isolation:isolate}
+    .auth-visual:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,12,19,.16),rgba(4,12,19,.84))}
+    .auth-visual>*{position:relative;z-index:1}
+    .mini-brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.1em}
+    .mini-brand .dot{width:32px;height:32px;border-radius:11px;border:1px solid rgba(255,255,255,.4);display:grid;place-items:center;background:rgba(255,255,255,.09)}
+    .mini-brand svg{width:20px;height:20px}
+    .visual-quote{max-width:520px}
+    .visual-quote h2{font-size:clamp(34px,4vw,56px);line-height:1.02;letter-spacing:-.045em;margin:0 0 14px}
+    .visual-quote p{color:#d2dce3;max-width:540px;line-height:1.7}
+    .visual-chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{padding:9px 12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);border-radius:999px;font-size:11px;color:#e7f1f6}
+    .auth-panel{padding:54px;display:flex;flex-direction:column;justify-content:center;background:var(--panel-strong)}
+    .auth-panel h3{font-size:33px;letter-spacing:-.04em;margin:0 0 7px}
+    .auth-panel p{color:var(--muted);line-height:1.65;margin-top:0}
+    .role-switch{display:grid;grid-template-columns:1fr 1fr;padding:4px;background:var(--glass);border:1px solid var(--border);border-radius:14px;margin:22px 0 22px}
+    .role-switch button{padding:12px;border-radius:10px;background:transparent;color:var(--muted);cursor:pointer}
+    .role-switch button.active{background:var(--glass-2);color:var(--text);box-shadow:0 6px 20px rgba(0,0,0,.15)}
+    .field{margin:14px 0}
+    .field label{display:block;font-size:11px;color:var(--muted);margin:0 0 8px;letter-spacing:.08em;text-transform:uppercase}
+    .input-wrap{position:relative}
+    .input,.select{width:100%;padding:14px 15px;border-radius:13px;border:1px solid var(--border);background:var(--glass);color:var(--text);outline:none;transition:.2s}
+    .input:focus,.select:focus{border-color:rgba(114,242,218,.55);box-shadow:0 0 0 4px rgba(114,242,218,.08)}
+    .password-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:transparent;color:var(--muted);cursor:pointer}
+    .primary-btn,.ghost-btn,.danger-btn,.tiny-btn{cursor:pointer;border-radius:13px;transition:transform .18s ease, box-shadow .18s ease, background .18s ease}
+    .primary-btn{width:100%;padding:14px 16px;color:#061211;background:linear-gradient(135deg,#72f2da,#91ffd8);font-weight:800;box-shadow:0 12px 30px rgba(114,242,218,.14)}
+    .primary-btn:hover,.ghost-btn:hover,.danger-btn:hover,.tiny-btn:hover{transform:translateY(-1px)}
+    .ghost-btn{padding:11px 13px;color:var(--text);background:var(--glass);border:1px solid var(--border)}
+    .danger-btn{padding:11px 13px;color:#ffe7eb;background:rgba(255,113,135,.11);border:1px solid rgba(255,113,135,.24)}
+    .tiny-btn{padding:8px 10px;color:var(--text);background:var(--glass);border:1px solid var(--border);font-size:11px}
+    .demo-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .demo-btn{border:1px dashed var(--border);background:transparent;color:var(--muted);padding:8px 10px;border-radius:10px;cursor:pointer;font-size:11px}
+    .back-link{color:var(--muted);background:transparent;cursor:pointer;margin:14px auto 0}
+    .error-note{font-size:11px;color:#ff95a8;min-height:16px;margin:6px 0 0}
+    .app{position:relative;z-index:1;min-height:100vh}
+    .shell{min-height:100vh;display:grid;grid-template-columns:var(--sidebar) 1fr}
+    .sidebar{position:sticky;top:0;height:100vh;padding:20px 14px;border-right:1px solid var(--border);background:rgba(5,15,22,.44);backdrop-filter:blur(22px);display:flex;flex-direction:column;z-index:20}
+    body.theme-light .sidebar{background:rgba(244,250,252,.7)}
+    .side-brand{display:flex;align-items:center;gap:10px;padding:8px 10px 20px;font-weight:900;letter-spacing:.08em}
+    .side-brand .square{width:34px;height:34px;border-radius:12px;border:1px solid var(--border);display:grid;place-items:center;background:linear-gradient(135deg,rgba(114,242,218,.18),rgba(140,167,255,.18))}
+    .side-brand svg{width:20px;height:20px}
+    .side-section{font-size:10px;color:var(--dim);padding:14px 11px 7px;text-transform:uppercase;letter-spacing:.17em}
+    .nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;border-radius:12px;background:transparent;color:var(--muted);text-align:left;cursor:pointer;transition:.18s;margin:2px 0}
+    .nav-btn svg{width:18px;height:18px;opacity:.78}
+    .nav-btn:hover{background:var(--glass);color:var(--text)}
+    .nav-btn.active{background:linear-gradient(90deg,rgba(114,242,218,.12),transparent);color:var(--text);border:1px solid rgba(114,242,218,.14)}
+    .nav-spacer{flex:1}
+    .profile-mini{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid var(--border);border-radius:14px;background:var(--glass);cursor:pointer}
+    .avatar{width:32px;height:32px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#72f2da,#8ca7ff);color:#061211;font-weight:900;font-size:12px}
+    .profile-mini div:last-child{min-width:0}
+    .profile-mini strong{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .profile-mini span{font-size:10px;color:var(--muted)}
+    .main{min-width:0;padding:0 28px 36px}
+    .topbar{height:var(--topbar);display:flex;align-items:center;justify-content:space-between;gap:15px;position:sticky;top:0;z-index:15;backdrop-filter:blur(20px);background:linear-gradient(180deg,rgba(7,16,25,.82),rgba(7,16,25,.42),transparent)}
+    body.theme-light .topbar{background:linear-gradient(180deg,rgba(237,243,246,.92),rgba(237,243,246,.48),transparent)}
+    .top-left,.top-right{display:flex;align-items:center;gap:10px}
+    .mobile-menu{display:none}
+    .crumb{font-size:12px;color:var(--muted)}
+    .status-pill{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:999px;background:var(--glass);font-size:10px;color:var(--muted)}
+    .status-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 0 5px rgba(128,238,162,.08);animation:pulse 2s infinite}
+    .icon-btn{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:var(--glass);border:1px solid var(--border);color:var(--text);cursor:pointer}
+    .icon-btn svg{width:18px;height:18px}
+    .page{display:none;animation:fadeUp .35s ease both}
+    .page.active{display:block}
+    .hero{
+      position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.14);border-radius:28px;min-height:390px;background-size:cover;background-position:center;
+      box-shadow:var(--shadow);padding:30px
+    }
+    .hero:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,rgba(3,11,17,.9) 4%,rgba(3,11,17,.55) 45%,rgba(3,11,17,.2) 100%)}
+    .hero>*{position:relative;z-index:1}
+    .hero-top{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+    .eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:#b7c8d3}
+    .hero h1{font-size:clamp(36px,5vw,64px);margin:6px 0 0;letter-spacing:-.06em;line-height:.95}
+    .hero-sub{color:#d0dce3;margin:12px 0 0}
+    .hero-controls{display:flex;gap:8px;flex-wrap:wrap}
+    .hero-controls .select,.hero-controls .input{width:auto;min-width:170px;color:#fff;background:rgba(0,0,0,.22);border-color:rgba(255,255,255,.17)}
+    .current-row{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-top:58px}
+    .temp{font-size:clamp(76px,10vw,128px);font-weight:800;letter-spacing:-.08em;line-height:.8}
+    .condition-meta{padding-bottom:8px}
+    .condition-title{font-size:24px;font-weight:800}
+    .condition-meta .mini-metrics{display:flex;gap:16px;flex-wrap:wrap;color:#d2dee5;margin-top:9px;font-size:12px}
+    .hero-bottom{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;flex-wrap:wrap;margin-top:52px}
+    .source-tag{display:flex;align-items:center;gap:9px;font-size:11px;color:#d5e1e7}
+    .source-badge{width:30px;height:30px;border-radius:10px;background:rgba(114,242,218,.18);border:1px solid rgba(114,242,218,.25);display:grid;place-items:center;font-weight:900;color:#b7fff0}
+    .quick-stat-row{display:flex;gap:8px;flex-wrap:wrap}
+    .quick-stat{min-width:100px;padding:11px 13px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18);border-radius:14px}
+    .quick-stat span{display:block;font-size:10px;color:#b7c7d0}
+    .quick-stat strong{display:block;margin-top:3px;font-size:14px}
+    .grid{display:grid;gap:14px}
+    .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .section-gap{margin-top:16px}
+    .panel{border:1px solid var(--border);background:var(--panel);backdrop-filter:blur(20px);border-radius:var(--radius);padding:19px;box-shadow:var(--shadow)}
+    .panel-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:14px}
+    .panel-title{font-size:13px;font-weight:800;letter-spacing:-.01em}
+    .panel-kicker{font-size:10px;color:var(--muted);margin-top:4px}
+    .metric-card{padding:16px;border:1px solid var(--border);background:var(--glass);border-radius:18px;position:relative;overflow:hidden}
+    .metric-card:after{content:"";position:absolute;width:90px;height:90px;border-radius:50%;background:rgba(114,242,218,.08);right:-35px;top:-35px;filter:blur(3px)}
+    .metric-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+    .metric-value{font-size:27px;font-weight:850;margin-top:8px;letter-spacing:-.04em}
+    .metric-meta{font-size:10px;color:var(--dim);margin-top:5px}
+    .forecast-strip{display:flex;gap:10px;overflow:auto;padding-bottom:3px}
+    .forecast-day{min-width:150px;padding:16px;border:1px solid var(--border);border-radius:18px;background:var(--glass);cursor:pointer;transition:.18s}
+    .forecast-day:hover,.forecast-day.active{transform:translateY(-2px);border-color:rgba(114,242,218,.4);background:linear-gradient(135deg,rgba(114,242,218,.08),var(--glass))}
+    .forecast-day .day{font-size:11px;color:var(--muted)}
+    .weather-symbol{font-size:28px;line-height:1;margin:13px 0}
+    .forecast-temp{display:flex;justify-content:space-between;align-items:end}
+    .forecast-temp strong{font-size:21px}
+    .forecast-temp span{font-size:11px;color:var(--muted)}
+    .range{height:4px;border-radius:99px;background:var(--glass-2);margin:10px 0}
+    .range i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#72f2da,#8ca7ff)}
+    .chart-wrap{position:relative;height:240px;padding-top:8px}
+    .chart-svg{width:100%;height:100%;overflow:visible}
+    .chart-grid-line{stroke:var(--border);stroke-width:1}
+    .chart-line{fill:none;stroke:#72f2da;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 7px rgba(114,242,218,.2))}
+    .chart-fill{fill:url(#fillArea);opacity:.85}
+    .chart-point{fill:var(--bg);stroke:#72f2da;stroke-width:2}
+    .axis{fill:var(--dim);font-size:10px}
+    .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:var(--muted)}
+    .legend span{display:flex;gap:7px;align-items:center}
+    .legend i{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--accent)}
+    .activity-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+    .activity{padding:13px;border:1px solid var(--border);border-radius:15px;background:var(--glass);cursor:pointer}
+    .activity.active{border-color:rgba(114,242,218,.4);background:rgba(114,242,218,.08)}
+    .activity .emoji{font-size:25px}
+    .activity strong{display:block;margin-top:8px;font-size:12px}
+    .score{font-size:12px;color:var(--muted);margin-top:5px}
+    .suitability{display:flex;align-items:center;gap:18px}
+    .ring{width:108px;height:108px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#72f2da var(--score),rgba(255,255,255,.08) 0);position:relative;flex:0 0 auto}
+    .ring:before{content:"";position:absolute;inset:8px;border-radius:50%;background:var(--panel)}
+    .ring span{position:relative;font-size:23px;font-weight:850}
+    .alert-banner{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:13px 15px;border:1px solid rgba(255,197,109,.24);background:rgba(255,197,109,.07);border-radius:16px;margin:12px 0}
+    .alert-banner strong{font-size:12px}
+    .alert-banner p{font-size:11px;color:var(--muted);margin:3px 0 0;line-height:1.5}
+    .alert-dot{width:9px;height:9px;border-radius:50%;background:var(--warning);box-shadow:0 0 0 6px rgba(255,197,109,.08);margin-top:3px}
+    .tag{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:9px;border:1px solid var(--border);background:var(--glass);color:var(--muted)}
+    .tag.success{color:#b6f4c7;border-color:rgba(128,238,162,.22);background:rgba(128,238,162,.06)}
+    .tag.warn{color:#ffe1ad;border-color:rgba(255,197,109,.23);background:rgba(255,197,109,.06)}
+    .tag.danger{color:#ffc0ca;border-color:rgba(255,113,135,.2);background:rgba(255,113,135,.06)}
+    .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:16px}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    th,td{padding:13px 14px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+    th{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.12em}
+    tr:last-child td{border-bottom:0}
+    .user-row{display:flex;align-items:center;gap:9px}
+    .user-row .avatar{width:29px;height:29px;border-radius:10px;font-size:10px}
+    .health{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:9px 0}
+    .health label{font-size:11px;color:var(--muted)}
+    .bar{height:6px;border-radius:99px;background:var(--glass-2);overflow:hidden;margin-top:6px}
+    .bar i{display:block;height:100%;background:linear-gradient(90deg,#72f2da,#8ca7ff);border-radius:99px}
+    .health b{font-size:11px}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+    .toggle-row:last-child{border-bottom:0}
+    .toggle{position:relative;width:42px;height:23px;flex:0 0 auto}
+    .toggle input{opacity:0;width:0;height:0}
+    .slider{position:absolute;inset:0;border-radius:99px;background:var(--glass-2);border:1px solid var(--border);cursor:pointer}
+    .slider:before{content:"";position:absolute;width:17px;height:17px;left:2px;top:2px;background:#abb9c2;border-radius:50%;transition:.18s}
+    .toggle input:checked + .slider{background:rgba(114,242,218,.18);border-color:rgba(114,242,218,.3)}
+    .toggle input:checked + .slider:before{transform:translateX(18px);background:var(--accent)}
+    .log{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+    .log:last-child{border-bottom:0}
+    .log-time{font-size:10px;color:var(--dim);width:58px;flex:0 0 auto}
+    .log-copy strong{font-size:11px}
+    .log-copy p{font-size:10px;color:var(--muted);margin:3px 0 0;line-height:1.5}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    .searchbox{position:relative;min-width:220px;flex:1}
+    .searchbox svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;color:var(--muted)}
+    .searchbox input{padding-left:38px}
+    .location-list{display:grid;gap:10px}
+    .location-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;border:1px solid var(--border);border-radius:15px;background:var(--glass)}
+    .location-card .left{display:flex;align-items:center;gap:10px}
+    .loc-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:rgba(114,242,218,.09);border:1px solid rgba(114,242,218,.16)}
+    .location-card strong{font-size:12px}
+    .location-card small{display:block;color:var(--muted);margin-top:3px}
+    .empty{padding:42px 14px;text-align:center;color:var(--muted)}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .form-grid .full{grid-column:1 / -1}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,8,12,.72);backdrop-filter:blur(10px);z-index:60;display:none;place-items:center;padding:18px}
+    .modal-backdrop.show{display:grid}
+    .modal{width:min(640px,100%);max-height:90vh;overflow:auto;border:1px solid var(--border);border-radius:24px;background:var(--panel-strong);box-shadow:var(--shadow);padding:22px;animation:fadeUp .25s ease both}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+    .modal h3{margin:0;font-size:20px}
+    .toast-stack{position:fixed;right:18px;bottom:18px;z-index:100;display:grid;gap:9px;width:min(380px,calc(100% - 36px))}
+    .toast{display:flex;gap:10px;align-items:flex-start;padding:13px 14px;border:1px solid var(--border);border-radius:15px;background:var(--panel-strong);box-shadow:var(--shadow);animation:fadeUp .25s ease both}
+    .toast .toast-icon{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:rgba(114,242,218,.10)}
+    .toast strong{display:block;font-size:12px}
+    .toast p{margin:3px 0 0;color:var(--muted);font-size:10px;line-height:1.5}
+    .mobile-bottom{display:none}
+    .page-title{font-size:clamp(28px,4vw,42px);letter-spacing:-.05em;margin:10px 0 4px}
+    .page-sub{font-size:12px;color:var(--muted);margin:0 0 18px}
+    .notice-card{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}
+    .notice-copy{display:flex;gap:12px}
+    .notice-icon{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:rgba(255,197,109,.08);border:1px solid rgba(255,197,109,.16);flex:0 0 auto}
+    .notice-copy strong{font-size:12px}
+    .notice-copy p{font-size:10px;color:var(--muted);margin:4px 0 0;line-height:1.55}
+    .preview-banner{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#b7fff0;margin-bottom:10px}
+    .admin-hero{padding:25px;border-radius:26px;border:1px solid var(--border);background:linear-gradient(135deg,rgba(114,242,218,.10),rgba(140,167,255,.08),var(--glass));}
+    .admin-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+    .admin-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+    .action-card{padding:15px;border:1px solid var(--border);border-radius:16px;background:var(--glass);cursor:pointer;text-align:left}
+    .action-card:hover{border-color:rgba(114,242,218,.32);background:rgba(114,242,218,.05)}
+    .action-card .action-icon{width:33px;height:33px;border-radius:11px;display:grid;place-items:center;background:rgba(114,242,218,.09);margin-bottom:10px}
+    .action-card strong{font-size:11px}
+    .action-card span{display:block;color:var(--muted);font-size:9px;line-height:1.45;margin-top:4px}
+    .source-health{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px;border:1px solid var(--border);border-radius:16px;background:var(--glass)}
+    .source-health .signal{display:flex;align-items:center;gap:9px}
+    .signal-led{width:11px;height:11px;border-radius:50%;background:var(--success);box-shadow:0 0 0 7px rgba(128,238,162,.08)}
+    .threshold-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .threshold{padding:13px;border:1px solid var(--border);border-radius:15px;background:var(--glass)}
+    .threshold label{font-size:9px;color:var(--muted);display:block;text-transform:uppercase;letter-spacing:.1em}
+    .threshold input,.threshold select{margin-top:7px;width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text)}
+    .footer-note{font-size:9px;color:var(--dim);text-align:center;padding:20px 0 0}
+    @media (max-width:1200px){
+      .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .admin-grid{grid-template-columns:1fr}
+      .admin-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width:900px){
+      :root{--sidebar:0px}
+      .shell{display:block}
+      .sidebar{display:none}
+      .main{padding:0 16px 86px}
+      .mobile-menu{display:grid}
+      .mobile-bottom{position:fixed;display:flex;left:12px;right:12px;bottom:12px;height:62px;padding:7px;border:1px solid var(--border);background:var(--panel-strong);backdrop-filter:blur(18px);border-radius:20px;z-index:40;box-shadow:var(--shadow)}
+      .mobile-bottom button{flex:1;border-radius:13px;background:transparent;color:var(--muted);font-size:9px;cursor:pointer}
+      .mobile-bottom button.active{background:var(--glass-2);color:var(--text)}
+      .mobile-bottom svg{display:block;width:18px;height:18px;margin:0 auto 5px}
+      .auth-card{grid-template-columns:1fr;min-height:auto}
+      .auth-visual{min-height:330px}
+      .auth-panel{min-height:480px}
+      .topbar{height:68px}
+    }
+    @media (max-width:680px){
+      .auth-visual{padding:28px;min-height:270px}
+      .auth-panel{padding:28px}
+      .auth-card{border-radius:24px}
+      .g4,.g3,.g2{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
+      .form-grid .full{grid-column:auto}
+      .hero{padding:21px;min-height:500px}
+      .hero-controls{width:100%}
+      .hero-controls .select,.hero-controls .input{width:100%}
+      .current-row{margin-top:48px}
+      .temp{font-size:88px}
+      .hero-bottom{margin-top:40px}
+      .hero-bottom .quick-stat-row{width:100%}
+      .quick-stat{flex:1;min-width:0}
+      .admin-actions{grid-template-columns:1fr 1fr}
+      .status-pill{display:none}
+    }
+    @media (prefers-reduced-motion:reduce){
+      *,*:before,*:after{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+    }
+  </style>
+</head>
+<body class="theme-dark">
+  <div class="aurora"></div>
+  <div class="app-noise"></div>
+
+  <!-- SVG icon sprite -->
+  <svg width="0" height="0" style="position:absolute">
+    <symbol id="i-cloud-sun" viewBox="0 0 24 24"><path d="M8 18h9a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.2 8.7 4.7 4.7 0 0 0 8 18Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M6.5 6.5V4.7M3.9 7.6 2.6 6.3M10.1 7.6l1.3-1.3M5.2 10H3.4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 18 3.8 20V6L9 4l6 2 5.2-2v14L15 20l-6-2Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 4v14M15 6v14" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m6 15 4-4 3 2 5-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 8.8c0 5-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.8A4.7 4.7 0 0 1 8 4.1c1.5 0 3 .7 4 1.9a5.1 5.1 0 0 1 4-1.9 4.7 4.7 0 0 1 4.8 4.7Z" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4 4v4.6h4.6M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="m8 11 4 4 4-4M4 20h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="m9.5 3 .8 2a7.8 7.8 0 0 0 2.6 0l.8-2 2.2.9-.4 2a8 8 0 0 1 2 2l2-.4.9 2.2-1.9.8a8 8 0 0 1 0 2.8l1.9.8-.9 2.2-2-.4a8 8 0 0 1-2 2l.4 2-2.2.9-.8-2a7.8 7.8 0 0 0-2.6 0l-.8 2-2.2-.9.4-2a8 8 0 0 1-2-2l-2 .4L3.1 14l1.9-.8a8 8 0 0 1 0-2.8l-1.9-.8L4 7.4l2 .4a8 8 0 0 1 2-2l-.4-2L9.5 3Z" fill="none" stroke="currentColor" stroke-width="1.1"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M5 18h14l-1.5-2V11a5.5 5.5 0 0 0-11 0v5L5 18Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10 21h4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m16 16 5 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-5l-2 2M4 7V3m0 4h4M4 13a8 8 0 0 0 14 5l2-2m0 0v4m0-4h-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.3 8.2-8 10-4.7-1.8-8-5-8-10V6l8-3Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 15.2A8.5 8.5 0 0 1 8.8 4 8.5 8.5 0 1 0 20 15.2Z" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-log-out" viewBox="0 0 24 24"><path d="M10 4H4v16h6M15 8l4 4-4 4M19 12H8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-broadcast" viewBox="0 0 24 24"><path d="M8 9a4.8 4.8 0 0 0 0 6M4.8 6.2a9 9 0 0 0 0 11.6M16 9a4.8 4.8 0 0 1 0 6M19.2 6.2a9 9 0 0 1 0 11.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="12" r="2.3" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  </svg>
+
+  <!-- SPLASH -->
+  <section id="splash" class="splash" aria-label="Application splash screen">
+    <div class="splash-grid"></div>
+    <div class="splash-glow"></div>
+    <div class="splash-content">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><use href="#i-cloud-sun"></use></svg>
+      </div>
+      <div class="splash-kicker">Australian Weather Intelligence</div>
+      <div class="splash-title">ATMOS<span style="color:#72f2da">//</span>BOM</div>
+      <div class="splash-sub">Live forecast intelligence · historical insights · responsive by design</div>
+      <div class="boot-line"><span></span></div>
+      <div class="boot-status">Synchronising interface / weather layers</div>
+    </div>
+  </section>
+
+  <!-- AUTH -->
+  <main id="auth" class="auth-wrap">
+    <section id="loginCard" class="auth-card">
+      <div id="authVisual" class="auth-visual" style="background-image:url('https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=2200&q=85');">
+        <div class="mini-brand"><span class="dot"><svg viewBox="0 0 24 24"><use href="#i-cloud-sun"></use></svg></span> ATMOS // BOM</div>
+        <div class="visual-quote">
+          <div class="eyebrow">Forecast without friction</div>
+          <h2>See the weather before the weather sees you.</h2>
+          <p>A polished UI concept for the CSP3341 weather dashboard: searchable Australian locations, forecast intelligence, alerts, history, activity suitability and a full administrative control layer.</p>
+          <div class="visual-chips">
+            <span class="chip">BOM forecast source</span>
+            <span class="chip">Role-aware interface</span>
+            <span class="chip">Cached-data ready</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-panel">
+        <div class="eyebrow">Secure access</div>
+        <h3>Welcome back.</h3>
+        <p>Sign in to access your personalised weather workspace.</p>
+
+        <div class="role-switch">
+          <button class="active" data-role="standard">Standard user</button>
+          <button data-role="admin">Administrator</button>
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" class="input" type="email" placeholder="you@example.com" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <input id="password" class="input" type="password" placeholder="Enter password" autocomplete="current-password" />
+            <button class="password-eye" type="button" id="togglePassword">show</button>
+          </div>
+          <div id="loginError" class="error-note"></div>
+        </div>
+        <button class="primary-btn" id="loginBtn">Enter dashboard</button>
+
+        <div class="demo-row">
+          <button class="demo-btn" id="fillStandard">Use standard demo</button>
+          <button class="demo-btn" id="fillAdmin">Use admin demo</button>
+        </div>
+        <button class="back-link" id="createAccountLink">New here? Create an account</button>
+        <div style="margin-top:22px;text-align:center">
+          <button id="authTheme" class="tiny-btn" type="button">◐ Change theme</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="createCard" class="auth-card hidden">
+      <div class="auth-visual" style="background-image:url('https://images.unsplash.com/photo-1485236715568-ddc5ee6ca227?auto=format&fit=crop&w=2200&q=85');">
+        <div class="mini-brand"><span class="dot"><svg viewBox="0 0 24 24"><use href="#i-cloud-sun"></use></svg></span> ATMOS // BOM</div>
+        <div class="visual-quote">
+          <div class="eyebrow">Personal weather workspace</div>
+          <h2>Build a view that follows your day.</h2>
+          <p>Save places, compare historical conditions, export forecasts and keep weather intelligence one glance away.</p>
+          <div class="visual-chips">
+            <span class="chip">Saved locations</span>
+            <span class="chip">Forecast history</span>
+            <span class="chip">Outdoor ratings</span>
+          </div>
+        </div>
+      </div>
+      <div class="auth-panel">
+        <div class="eyebrow">Identity setup</div>
+        <h3>Create account.</h3>
+        <p>This prototype stores no real credentials. It is a front-end interaction model ready for your later React + Go backend.</p>
+        <div class="form-grid">
+          <div class="field">
+            <label>First name</label><input id="newFirst" class="input" placeholder="Minindu" />
+          </div>
+          <div class="field">
+            <label>Last name</label><input id="newLast" class="input" placeholder="Baranasuriya" />
+          </div>
+          <div class="field full">
+            <label>Email</label><input id="newEmail" class="input" type="email" placeholder="you@example.com" />
+          </div>
+          <div class="field">
+            <label>Password</label><input id="newPass" class="input" type="password" placeholder="Create password" />
+          </div>
+          <div class="field">
+            <label>Confirm</label><input id="newPass2" class="input" type="password" placeholder="Repeat password" />
+          </div>
+          <div class="field full">
+            <label>Default Australian location</label>
+            <select id="newLocation" class="select">
+              <option>Melbourne, VIC</option>
+              <option>Sydney, NSW</option>
+              <option>Brisbane, QLD</option>
+              <option>Perth, WA</option>
+              <option>Hobart, TAS</option>
+              <option>Adelaide, SA</option>
+              <option>Darwin, NT</option>
+              <option>Canberra, ACT</option>
+            </select>
+          </div>
+        </div>
+        <button class="primary-btn" id="createAccountBtn">Create workspace</button>
+        <div id="createMsg" class="error-note"></div>
+        <button class="back-link" id="backToLogin">← Back to sign in</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- APP -->
+  <div id="app" class="app hidden">
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="side-brand"><span class="square"><svg viewBox="0 0 24 24"><use href="#i-cloud-sun"></use></svg></span> ATMOS</div>
+        <div class="side-section">Workspace</div>
+        <button class="nav-btn active" data-page="overview"><svg viewBox="0 0 24 24"><use href="#i-grid"></use></svg>Overview</button>
+        <button class="nav-btn" data-page="forecast"><svg viewBox="0 0 24 24"><use href="#i-cloud-sun"></use></svg>Forecast</button>
+        <button class="nav-btn" data-page="insights"><svg viewBox="0 0 24 24"><use href="#i-chart"></use></svg>Insights</button>
+        <button class="nav-btn" data-page="locations"><svg viewBox="0 0 24 24"><use href="#i-heart"></use></svg>Saved locations</button>
+        <button class="nav-btn" data-page="history"><svg viewBox="0 0 24 24"><use href="#i-history"></use></svg>History</button>
+        <button class="nav-btn" data-page="exports"><svg viewBox="0 0 24 24"><use href="#i-download"></use></svg>Exports</button>
+        <div class="side-section admin-nav-label">Administration</div>
+        <button class="nav-btn admin-only" data-page="admin"><svg viewBox="0 0 24 24"><use href="#i-settings"></use></svg>Admin console</button>
+        <button class="nav-btn admin-only" data-page="users"><svg viewBox="0 0 24 24"><use href="#i-user"></use></svg>User management</button>
+        <div class="nav-spacer"></div>
+        <button class="nav-btn" id="themeSide"><svg viewBox="0 0 24 24"><use href="#i-moon"></use></svg>Switch theme</button>
+        <button class="nav-btn" id="logoutBtn"><svg viewBox="0 0 24 24"><use href="#i-log-out"></use></svg>Sign out</button>
+        <div class="profile-mini" id="profileMini">
+          <div class="avatar" id="avatarMini">MU</div>
+          <div><strong id="profileName">Minindu</strong><span id="profileRole">Standard user</span></div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="top-left">
+            <button class="icon-btn mobile-menu" id="mobileMenu"><svg viewBox="0 0 24 24"><use href="#i-menu"></use></svg></button>
+            <div class="crumb" id="crumb">Workspace / Overview</div>
+          </div>
+          <div class="top-right">
+            <div class="status-pill"><span class="status-dot"></span> BOM source healthy · 8 sec ago</div>
+            <button class="icon-btn" id="notifyBtn" title="Alerts"><svg viewBox="0 0 24 24"><use href="#i-bell"></use></svg></button>
+            <button class="icon-btn" id="themeBtn" title="Change theme"><svg viewBox="0 0 24 24"><use href="#i-moon"></use></svg></button>
+          </div>
+        </header>
+
+        <!-- OVERVIEW -->
+        <section id="page-overview" class="page active">
+          <div id="announcementBanner" class="alert-banner">
+            <div style="display:flex;gap:12px">
+              <span class="alert-dot"></span>
+              <div><strong>System announcement · Scheduled maintenance</strong><p>Weather data services may briefly enter read-only mode tonight. The latest cached forecast remains available during an outage.</p></div>
+            </div>
+            <button class="tiny-btn" id="dismissAnnouncement">Dismiss</button>
+          </div>
+
+          <section id="hero" class="hero" style="background-image:url('https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=2200&q=85');">
+            <div class="hero-top">
+              <div>
+                <div class="eyebrow">Live atmospheric snapshot</div>
+                <h1 id="heroLocation">Melbourne, VIC</h1>
+                <div class="hero-sub"><span id="heroDateText">Thursday · 8 October 2026</span> · selected forecast date</div>
+              </div>
+              <div class="hero-controls">
+                <input id="locationSearch" class="input" list="locationOptions" placeholder="Search city / postcode / coordinates" />
+                <datalist id="locationOptions">
+                  <option value="Melbourne, VIC"></option><option value="Sydney, NSW"></option><option value="Brisbane, QLD"></option><option value="Perth, WA"></option><option value="Hobart, TAS"></option><option value="Adelaide, SA"></option><option value="Darwin, NT"></option><option value="Canberra, ACT"></option><option value="-37.81, 144.96"></option>
+                </datalist>
+                <input id="datePicker" class="input" type="date" value="2026-10-08" />
+              </div>
+            </div>
+
+            <div class="current-row">
+              <div class="temp" id="heroTemp">19°</div>
+              <div class="condition-meta">
+                <div class="condition-title" id="heroCondition">Partly cloudy</div>
+                <div class="mini-metrics">
+                  <span>Feels like <b id="feelsLike">18°</b></span>
+                  <span>Wind <b id="windText">17 km/h SW</b></span>
+                  <span>Humidity <b id="humidityText">62%</b></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="hero-bottom">
+              <div class="source-tag"><span class="source-badge">B</span><span>BOM forecast source · Access-G via Open-Meteo endpoint</span></div>
+              <div class="quick-stat-row">
+                <div class="quick-stat"><span>Min</span><strong id="heroMin">12°</strong></div>
+                <div class="quick-stat"><span>Max</span><strong id="heroMax">22°</strong></div>
+                <div class="quick-stat"><span>Rain</span><strong id="heroRain">18%</strong></div>
+                <div class="quick-stat"><span>Sync</span><strong>08 sec</strong></div>
+              </div>
+            </div>
+          </section>
+
+          <div class="grid g4 section-gap">
+            <div class="metric-card"><div class="metric-label">Temperature range</div><div class="metric-value" id="metricRange">12–22°</div><div class="metric-meta">Daily minimum / maximum</div></div>
+            <div class="metric-card"><div class="metric-label">Humidity</div><div class="metric-value" id="metricHumidity">62%</div><div class="metric-meta">Current relative humidity</div></div>
+            <div class="metric-card"><div class="metric-label">Rain probability</div><div class="metric-value" id="metricRain">18%</div><div class="metric-meta">Selected date</div></div>
+            <div class="metric-card"><div class="metric-label">Forecast accuracy</div><div class="metric-value">93.4%</div><div class="metric-meta">Historical comparison</div></div>
+          </div>
+
+          <div class="grid g2 section-gap">
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">Multi-day outlook</div><div class="panel-kicker">Switch forecast day by clicking a card</div></div><button class="tiny-btn" data-page="forecast">Full forecast</button></div>
+              <div id="forecastStrip" class="forecast-strip"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">Weather intelligence</div><div class="panel-kicker">Practical recommendation from the current forecast</div></div><span id="activityTag" class="tag success">GOOD OUTLOOK</span></div>
+              <div class="suitability">
+                <div id="suitRing" class="ring" style="--score:81%"><span id="suitScore">81</span></div>
+                <div><strong id="activityTitle">Cycling is looking strong.</strong><p id="activityCopy" style="font-size:11px;color:var(--muted);line-height:1.55;margin:6px 0 0">Moderate wind, low rain probability and comfortable temperatures support a good outdoor window.</p><button class="tiny-btn" style="margin-top:9px" id="activityBtn">Change activity</button></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid g2 section-gap">
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">24-hour temperature trend</div><div class="panel-kicker">Minimum / maximum temperature trend</div></div><div class="legend"><span><i></i>Temperature</span></div></div>
+              <div class="chart-wrap" id="overviewChart"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">Saved locations</div><div class="panel-kicker">Quick weather views</div></div><button class="tiny-btn" data-page="locations">Manage</button></div>
+              <div class="location-list" id="favoritePreview"></div>
+            </div>
+          </div>
+          <div class="footer-note">Prototype UI only · Replace demo weather/auth data with your Go + REST + SQLite services in the implementation stage.</div>
+        </section>
+
+        <!-- FORECAST -->
+        <section id="page-forecast" class="page">
+          <div class="page-title">Forecast matrix</div>
+          <p class="page-sub">Daily and hourly layers for the selected Australian location.</p>
+          <div class="panel">
+            <div class="toolbar">
+              <div class="searchbox"><svg viewBox="0 0 24 24"><use href="#i-search"></use></svg><input id="forecastSearch" class="input" placeholder="Search another city, postcode or coordinates" /></div>
+              <select class="select" id="forecastView" style="width:auto"><option>Daily</option><option>Hourly</option></select>
+              <button class="ghost-btn" id="refreshUserForecast"><svg style="width:14px;vertical-align:-3px;margin-right:5px" viewBox="0 0 24 24"><use href="#i-refresh"></use></svg>Refresh</button>
+              <button class="ghost-btn export-btn">Export</button>
+            </div>
+          </div>
+          <div class="grid g4 section-gap" id="forecastCardsLarge"></div>
+          <div class="panel section-gap">
+            <div class="panel-head"><div><div class="panel-title">Forecast detail</div><div class="panel-kicker">Hourly mode visualises each available hour</div></div><span class="tag success">LIVE READY</span></div>
+            <div id="hourlyPanel" class="forecast-strip"></div>
+          </div>
+          <div class="panel section-gap">
+            <div class="panel-head"><div><div class="panel-title">Selected date conditions</div><div class="panel-kicker">Clear display of BOM-derived daily values</div></div><span id="detailDate" class="tag">8 OCT 2026</span></div>
+            <div class="grid g4">
+              <div class="metric-card"><div class="metric-label">Minimum temperature</div><div class="metric-value" id="detailMin">12°</div><div class="metric-meta">°C</div></div>
+              <div class="metric-card"><div class="metric-label">Maximum temperature</div><div class="metric-value" id="detailMax">22°</div><div class="metric-meta">°C</div></div>
+              <div class="metric-card"><div class="metric-label">Humidity</div><div class="metric-value" id="detailHum">62%</div><div class="metric-meta">relative</div></div>
+              <div class="metric-card"><div class="metric-label">Rainfall probability</div><div class="metric-value" id="detailRain">18%</div><div class="metric-meta">forecast</div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- INSIGHTS -->
+        <section id="page-insights" class="page">
+          <div class="page-title">Weather insights</div>
+          <p class="page-sub">Historical patterns, trends and forecast-accuracy comparisons.</p>
+          <div class="grid g3">
+            <div class="metric-card"><div class="metric-label">Mean temperature</div><div class="metric-value">17.8°</div><div class="metric-meta">selected period</div></div>
+            <div class="metric-card"><div class="metric-label">Rainfall trend</div><div class="metric-value">−14%</div><div class="metric-meta">vs previous period</div></div>
+            <div class="metric-card"><div class="metric-label">Forecast accuracy</div><div class="metric-value">93.4%</div><div class="metric-meta">observation comparison</div></div>
+          </div>
+          <div class="grid g2 section-gap">
+            <div class="panel"><div class="panel-head"><div><div class="panel-title">Temperature history</div><div class="panel-kicker">Historical trend visualisation</div></div><span class="tag">30 DAYS</span></div><div class="chart-wrap" id="insightChart"></div></div>
+            <div class="panel"><div class="panel-head"><div><div class="panel-title">Accuracy monitor</div><div class="panel-kicker">Forecast versus observed</div></div><span class="tag success">STABLE</span></div>
+              <div class="health"><div><label>Temperature forecasts</label><div class="bar"><i style="width:95%"></i></div></div><b>95%</b></div>
+              <div class="health"><div><label>Rainfall forecasts</label><div class="bar"><i style="width:88%"></i></div></div><b>88%</b></div>
+              <div class="health"><div><label>Humidity forecasts</label><div class="bar"><i style="width:93%"></i></div></div><b>93%</b></div>
+              <div class="health"><div><label>Wind forecasts</label><div class="bar"><i style="width:91%"></i></div></div><b>91%</b></div>
+            </div>
+          </div>
+          <div class="panel section-gap">
+            <div class="panel-head"><div><div class="panel-title">Insight summary</div><div class="panel-kicker">Human-readable interpretation of historical data</div></div></div>
+            <div class="alert-banner" style="margin:0;border-color:rgba(114,242,218,.2);background:rgba(114,242,218,.05)"><div style="display:flex;gap:12px"><span class="alert-dot" style="background:var(--accent);box-shadow:0 0 0 6px rgba(114,242,218,.08)"></span><div><strong>Pattern detected</strong><p>Morning temperatures have remained comparatively stable while late-afternoon humidity has shown the strongest variation during the selected period. This panel is a visual placeholder for your later historical comparison algorithm.</p></div></div></div>
+          </div>
+        </section>
+
+        <!-- LOCATIONS -->
+        <section id="page-locations" class="page">
+          <div class="page-title">Saved locations</div>
+          <p class="page-sub">Search, filter and open your favourite Australian forecast locations.</p>
+          <div class="panel"><div class="toolbar"><div class="searchbox"><svg viewBox="0 0 24 24"><use href="#i-search"></use></svg><input id="favSearch" class="input" placeholder="Filter saved locations" /></div><button class="primary-btn" style="width:auto" id="addLocationBtn">+ Add location</button></div></div>
+          <div class="grid g2 section-gap" id="locationGrid"></div>
+        </section>
+
+        <!-- HISTORY -->
+        <section id="page-history" class="page">
+          <div class="page-title">Forecast history</div>
+          <p class="page-sub">Previously retrieved forecasts and user query history, ready for database-backed persistence.</p>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Query timeline</div><div class="panel-kicker">Structured record preview</div></div><span class="tag success">PERSISTENCE READY</span></div>
+            <div class="table-wrap"><table><thead><tr><th>Timestamp</th><th>Location</th><th>Date</th><th>Result</th><th>Source</th></tr></thead><tbody>
+              <tr><td>08 Oct · 21:11</td><td>Melbourne, VIC</td><td>08 Oct 2026</td><td><span class="tag success">Retrieved</span></td><td>BOM / Access-G</td></tr>
+              <tr><td>08 Oct · 20:58</td><td>Sydney, NSW</td><td>09 Oct 2026</td><td><span class="tag success">Retrieved</span></td><td>BOM / Access-G</td></tr>
+              <tr><td>08 Oct · 20:41</td><td>Hobart, TAS</td><td>11 Oct 2026</td><td><span class="tag warn">Cached</span></td><td>Local cache</td></tr>
+              <tr><td>08 Oct · 20:12</td><td>Perth, WA</td><td>12 Oct 2026</td><td><span class="tag success">Retrieved</span></td><td>BOM / Access-G</td></tr>
+            </tbody></table></div>
+          </div>
+        </section>
+
+        <!-- EXPORTS -->
+        <section id="page-exports" class="page">
+          <div class="page-title">Forecast exports</div>
+          <p class="page-sub">Export what is displayed without leaving the workspace.</p>
+          <div class="grid g3">
+            <div class="panel"><div class="panel-title">CSV export</div><p class="panel-kicker" style="line-height:1.6">Machine-readable daily forecast with temperature, humidity and rainfall fields.</p><button class="primary-btn export-btn" style="margin-top:14px">Export CSV</button></div>
+            <div class="panel"><div class="panel-title">JSON export</div><p class="panel-kicker" style="line-height:1.6">Structured object ready for downstream processing or your React frontend.</p><button class="ghost-btn" id="jsonExport" style="margin-top:14px">Export JSON</button></div>
+            <div class="panel"><div class="panel-title">Report snapshot</div><p class="panel-kicker" style="line-height:1.6">UI-only placeholder for a printable report / PDF generator later.</p><button class="ghost-btn" id="reportSnapshot" style="margin-top:14px">Prepare snapshot</button></div>
+          </div>
+          <div class="panel section-gap"><div class="panel-head"><div><div class="panel-title">Export audit</div><div class="panel-kicker">Recent user actions</div></div></div>
+            <div class="log"><div class="log-time">21:13</div><div class="log-copy"><strong>CSV export generated</strong><p>Melbourne daily forecast · 7 rows · standard user</p></div></div>
+            <div class="log"><div class="log-time">20:45</div><div class="log-copy"><strong>Forecast snapshot prepared</strong><p>Sydney hourly view · admin preview</p></div></div>
+          </div>
+        </section>
+
+        <!-- ADMIN -->
+        <section id="page-admin" class="page admin-only-page">
+          <div class="admin-hero">
+            <div class="preview-banner">Administrator control layer</div>
+            <div style="display:flex;justify-content:space-between;gap:15px;align-items:flex-end;flex-wrap:wrap">
+              <div><div class="page-title" style="margin:0">Control room</div><p class="page-sub" style="margin:6px 0 0">Operate the source connection, announcements, thresholds, users, cache and observability layer.</p></div>
+              <div class="toolbar"><button class="ghost-btn" id="impersonateBtn">Log in as standard user</button><button class="primary-btn" style="width:auto" id="manualRefresh"><svg style="width:14px;vertical-align:-3px;margin-right:5px" viewBox="0 0 24 24"><use href="#i-refresh"></use></svg>Refresh from BOM</button></div>
+            </div>
+          </div>
+
+          <div class="grid g4 section-gap">
+            <div class="metric-card"><div class="metric-label">Active users</div><div class="metric-value">1,284</div><div class="metric-meta">current session window</div></div>
+            <div class="metric-card"><div class="metric-label">BOM latency</div><div class="metric-value">2.8s</div><div class="metric-meta">last successful pull</div></div>
+            <div class="metric-card"><div class="metric-label">Cache coverage</div><div class="metric-value">99.2%</div><div class="metric-meta">latest forecasts retained</div></div>
+            <div class="metric-card"><div class="metric-label">System alerts</div><div class="metric-value">03</div><div class="metric-meta">1 warning · 2 info</div></div>
+          </div>
+
+          <div class="admin-grid section-gap">
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">Administrative actions</div><div class="panel-kicker">Mapped directly to the admin functional requirements</div></div></div>
+              <div class="admin-actions">
+                <button class="action-card" id="announceAction"><div class="action-icon"><svg viewBox="0 0 24 24"><use href="#i-broadcast"></use></svg></div><strong>Broadcast notice</strong><span>Publish a system-wide announcement.</span></button>
+                <button class="action-card" id="sourceCheck"><div class="action-icon"><svg viewBox="0 0 24 24"><use href="#i-shield"></use></svg></div><strong>Verify source</strong><span>Check BOM / endpoint connectivity.</span></button>
+                <button class="action-card" id="livePreview"><div class="action-icon"><svg viewBox="0 0 24 24"><use href="#i-cloud-sun"></use></svg></div><strong>Live preview</strong><span>Inspect current weather as admin.</span></button>
+                <button class="action-card" id="logsAction"><div class="action-icon"><svg viewBox="0 0 24 24"><use href="#i-history"></use></svg></div><strong>System logs</strong><span>Review recent runtime activity.</span></button>
+                <button class="action-card" id="usersAction"><div class="action-icon"><svg viewBox="0 0 24 24"><use href="#i-user"></use></svg></div><strong>Manage users</strong><span>Search accounts and change access.</span></button>
+                <button class="action-card" id="thresholdAction"><div class="action-icon"><svg viewBox="0 0 24 24"><use href="#i-settings"></use></svg></div><strong>Alert thresholds</strong><span>Configure temperature and condition alerts.</span></button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">Source health</div><div class="panel-kicker">Live connection status</div></div></div>
+              <div class="source-health"><div class="signal"><span class="signal-led"></span><div><strong style="font-size:12px">Healthy</strong><div style="font-size:9px;color:var(--muted);margin-top:3px">BOM feed responding</div></div></div><span class="tag success">2.8s</span></div>
+              <div class="health" style="margin-top:18px"><div><label>API success rate</label><div class="bar"><i style="width:99%"></i></div></div><b>99%</b></div>
+              <div class="health"><div><label>Cached fallback</label><div class="bar"><i style="width:92%"></i></div></div><b>92%</b></div>
+              <div class="health"><div><label>Database writes</label><div class="bar"><i style="width:97%"></i></div></div><b>97%</b></div>
+            </div>
+          </div>
+
+          <div class="grid g2 section-gap">
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">Alert thresholds</div><div class="panel-kicker">Temperature and weather condition policies</div></div><button class="tiny-btn" id="saveThresholds">Save</button></div>
+              <div class="threshold-grid">
+                <div class="threshold"><label>High temperature °C</label><input type="number" value="38" id="highTemp"></div>
+                <div class="threshold"><label>Low temperature °C</label><input type="number" value="4" id="lowTemp"></div>
+                <div class="threshold"><label>Rain threshold %</label><input type="number" value="80" id="rainThreshold"></div>
+                <div class="threshold"><label>Wind condition</label><select id="windThreshold"><option>Strong wind</option><option>Gale</option><option>Storm</option></select></div>
+              </div>
+              <div class="toggle-row"><div><strong style="font-size:11px">Push threshold alerts</strong><div style="font-size:9px;color:var(--muted);margin-top:3px">Notify affected users automatically.</div></div><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">Retention & resilience</div><div class="panel-kicker">Operational settings for historical data</div></div><span class="tag">NFR READY</span></div>
+              <div class="toggle-row"><div><strong style="font-size:11px">Keep cached forecast</strong><div style="font-size:9px;color:var(--muted);margin-top:3px">Continue showing the latest data when BOM is unavailable.</div></div><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+              <div class="toggle-row"><div><strong style="font-size:11px">Retain query history</strong><div style="font-size:9px;color:var(--muted);margin-top:3px">Persist user queries for historical retrieval.</div></div><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+              <div class="toggle-row"><div><strong style="font-size:11px">Concurrent worker pool</strong><div style="font-size:9px;color:var(--muted);margin-top:3px">Parallel weather retrieval ready for Go routines/channels.</div></div><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:15px"><span class="tag success">SYSTEM READY</span><span style="font-size:9px;color:var(--muted)">Recommended retention: 365 days</span></div>
+            </div>
+          </div>
+
+          <div class="panel section-gap">
+            <div class="panel-head"><div><div class="panel-title">Runtime logs</div><div class="panel-kicker">Latest admin-observable events</div></div><button class="tiny-btn" id="viewAllLogs">View all</button></div>
+            <div id="adminLogs"></div>
+          </div>
+        </section>
+
+        <!-- USERS -->
+        <section id="page-users" class="page admin-only-page">
+          <div class="page-title">User management</div>
+          <p class="page-sub">Account administration and role-aware access preview.</p>
+          <div class="panel"><div class="toolbar"><div class="searchbox"><svg viewBox="0 0 24 24"><use href="#i-search"></use></svg><input id="userSearch" class="input" placeholder="Search by name or email" /></div><select id="userFilter" class="select" style="width:auto"><option>All roles</option><option>Standard</option><option>Admin</option></select><button class="ghost-btn" id="exportUsers">Export users</button></div></div>
+          <div class="panel section-gap"><div class="table-wrap"><table><thead><tr><th>User</th><th>Role</th><th>Location</th><th>Status</th><th>Last active</th><th>Actions</th></tr></thead><tbody id="usersTable"></tbody></table></div></div>
+        </section>
+      </main>
+    </div>
+
+    <nav class="mobile-bottom" id="mobileBottom">
+      <button class="active" data-page="overview"><svg viewBox="0 0 24 24"><use href="#i-grid"></use></svg>Overview</button>
+      <button data-page="forecast"><svg viewBox="0 0 24 24"><use href="#i-cloud-sun"></use></svg>Forecast</button>
+      <button data-page="insights"><svg viewBox="0 0 24 24"><use href="#i-chart"></use></svg>Insights</button>
+      <button data-page="locations"><svg viewBox="0 0 24 24"><use href="#i-heart"></use></svg>Saved</button>
+      <button class="admin-only" data-page="admin"><svg viewBox="0 0 24 24"><use href="#i-settings"></use></svg>Admin</button>
+    </nav>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-head"><h3 id="modalTitle">Modal</h3><button class="icon-btn" id="closeModal">×</button></div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="toastStack" class="toast-stack"></div>
+
+  <script>
+    const demoLocations = {
+      "Melbourne, VIC": {temp:19,min:12,max:22,humidity:62,rain:18,wind:"17 km/h SW",condition:"Partly cloudy",icon:"⛅",score:81,activity:"Cycling",activityCopy:"Moderate wind, low rain probability and comfortable temperatures support a good outdoor window.",hero:"https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=2200&q=85"},
+      "Sydney, NSW": {temp:24,min:16,max:27,humidity:57,rain:22,wind:"20 km/h E",condition:"Sunny intervals",icon:"🌤️",score:88,activity:"Beach walk",activityCopy:"Warm conditions and a lower rain probability make the coastline a strong option today.",hero:"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2200&q=85"},
+      "Brisbane, QLD": {temp:28,min:19,max:30,humidity:71,rain:44,wind:"18 km/h NE",condition:"Mostly sunny",icon:"☀️",score:79,activity:"Running",activityCopy:"Heat rises quickly, so an early-morning session is preferable to the afternoon window.",hero:"https://images.unsplash.com/photo-1516939884455-1445c8652f83?auto=format&fit=crop&w=2200&q=85"},
+      "Perth, WA": {temp:25,min:15,max:28,humidity:49,rain:8,wind:"13 km/h W",condition:"Clear",icon:"☀️",score:94,activity:"Cycling",activityCopy:"Excellent outdoor conditions: low rain chance, manageable wind and a comfortable thermal range.",hero:"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2200&q=85"},
+      "Hobart, TAS": {temp:13,min:8,max:15,humidity:73,rain:61,wind:"24 km/h W",condition:"Showers",icon:"🌦️",score:54,activity:"Photography",activityCopy:"Conditions are usable with weather protection, but showers and wind reduce the comfort score.",hero:"https://images.unsplash.com/photo-1519692933481-e162a57d6721?auto=format&fit=crop&w=2200&q=85"},
+      "Adelaide, SA": {temp:21,min:10,max:25,humidity:52,rain:11,wind:"16 km/h S",condition:"Sunny",icon:"☀️",score:92,activity:"Hiking",activityCopy:"A strong hiking window with mild temperatures, low rainfall probability and moderate wind.",hero:"https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=2200&q=85"},
+      "Darwin, NT": {temp:31,min:24,max:33,humidity:78,rain:67,wind:"15 km/h NW",condition:"Storm chance",icon:"⛈️",score:49,activity:"Beach walk",activityCopy:"Heat and storm potential reduce the suitability score; keep the activity close to shelter.",hero:"https://images.unsplash.com/photo-1605727216801-e27ce1d0cc28?auto=format&fit=crop&w=2200&q=85"},
+      "Canberra, ACT": {temp:17,min:7,max:20,humidity:58,rain:27,wind:"12 km/h W",condition:"Cloudy",icon:"☁️",score:76,activity:"Hiking",activityCopy:"A cooler but generally workable outdoor window with moderate rainfall probability.",hero:"https://images.unsplash.com/photo-1485236715568-ddc5ee6ca227?auto=format&fit=crop&w=2200&q=85"}
+    };
+
+    const daily = [
+      {day:"Thu 08",date:"2026-10-08",icon:"⛅",min:12,max:22,rain:18,humidity:62,condition:"Partly cloudy"},
+      {day:"Fri 09",date:"2026-10-09",icon:"☀️",min:13,max:24,rain:7,humidity:58,condition:"Sunny"},
+      {day:"Sat 10",date:"2026-10-10",icon:"🌤️",min:14,max:25,rain:10,humidity:57,condition:"Sunny intervals"},
+      {day:"Sun 11",date:"2026-10-11",icon:"🌦️",min:15,max:20,rain:46,humidity:68,condition:"Showers"},
+      {day:"Mon 12",date:"2026-10-12",icon:"☁️",min:11,max:18,rain:39,humidity:64,condition:"Cloudy"},
+      {day:"Tue 13",date:"2026-10-13",icon:"☀️",min:10,max:21,rain:12,humidity:55,condition:"Clear"},
+      {day:"Wed 14",date:"2026-10-14",icon:"🌧️",min:13,max:19,rain:71,humidity:77,condition:"Rain"}
+    ];
+
+    let currentRole = "standard";
+    let currentPage = "overview";
+    let currentLocation = "Melbourne, VIC";
+    let themeMode = localStorage.getItem("atmosTheme") || "dark";
+    let selectedActivity = "Cycling";
+
+    const conditionImages = {
+      clear: [
+        "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2200&q=85",
+        "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=2200&q=85"
+      ],
+      cloud: [
+        "https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=2200&q=85",
+        "https://images.unsplash.com/photo-1485236715568-ddc5ee6ca227?auto=format&fit=crop&w=2200&q=85"
+      ],
+      rain: [
+        "https://images.unsplash.com/photo-1519692933481-e162a57d6721?auto=format&fit=crop&w=2200&q=85",
+        "https://images.unsplash.com/photo-1501691223387-dd0500403074?auto=format&fit=crop&w=2200&q=85"
+      ],
+      storm: [
+        "https://images.unsplash.com/photo-1605727216801-e27ce1d0cc28?auto=format&fit=crop&w=2200&q=85"
+      ],
+      hot: [
+        "https://images.unsplash.com/photo-1516939884455-1445c8652f83?auto=format&fit=crop&w=2200&q=85"
+      ]
+    };
+
+    const navLabels = {
+      overview:"Workspace / Overview",
+      forecast:"Workspace / Forecast",
+      insights:"Workspace / Insights",
+      locations:"Workspace / Saved locations",
+      history:"Workspace / History",
+      exports:"Workspace / Exports",
+      admin:"Administration / Control room",
+      users:"Administration / User management"
+    };
+
+    function $(id){return document.getElementById(id)}
+    function toast(title, msg, icon="✓"){
+      const el=document.createElement("div");
+      el.className="toast";
+      el.innerHTML=`<div class="toast-icon">${icon}</div><div><strong>${title}</strong><p>${msg}</p></div>`;
+      $("toastStack").appendChild(el);
+      setTimeout(()=>el.remove(),4200);
+    }
+    function setTheme(mode){
+      themeMode=mode;
+      document.body.classList.toggle("theme-light",mode==="light");
+      localStorage.setItem("atmosTheme",mode);
+      const icons=[$("themeBtn"),$("themeSide"),$("authTheme")].filter(Boolean);
+      icons.forEach(btn=>btn.title = mode==="light" ? "Switch to dark / aurora theme" : "Switch to light theme");
+    }
+    function cycleTheme(){
+      setTheme(themeMode==="dark" ? "light" : "dark");
+      toast("Theme updated", themeMode==="light" ? "Light glass theme applied." : "Dark aurora theme applied.","◐");
+    }
+    function pickWeatherImage(data){
+      const text=(data.condition+"").toLowerCase();
+      let key="cloud";
+      if(text.includes("storm")) key="storm";
+      else if(text.includes("rain")||text.includes("shower")) key="rain";
+      else if(text.includes("clear")||text.includes("sun")) key="clear";
+      else if(data.temp>=29) key="hot";
+      const pool=conditionImages[key]||conditionImages.cloud;
+      return pool[Math.floor(Math.random()*pool.length)];
+    }
+    function renderForecastStrip(){
+      $("forecastStrip").innerHTML = daily.map((d,i)=>`
+        <div class="forecast-day ${i===0?"active":""}" data-date="${d.date}">
+          <div class="day">${d.day}</div>
+          <div class="weather-symbol">${d.icon}</div>
+          <div class="forecast-temp"><strong>${d.max}°</strong><span>${d.min}°</span></div>
+          <div class="range"><i style="width:${Math.max(24,Math.min(100,d.max*3.4))}%"></i></div>
+          <div style="font-size:10px;color:var(--muted)">${d.rain}% rain · ${d.condition}</div>
+        </div>
+      `).join("");
+      document.querySelectorAll(".forecast-day").forEach(card=>card.addEventListener("click",()=>{
+        document.querySelectorAll(".forecast-day").forEach(x=>x.classList.remove("active"));
+        card.classList.add("active");
+        $("datePicker").value=card.dataset.date;
+        syncFromDate(card.dataset.date);
+      }));
+    }
+    function renderLargeForecast(list=daily){
+      $("forecastCardsLarge").innerHTML=list.map((d,i)=>`
+        <div class="panel" style="padding:16px;cursor:pointer" data-select-date="${d.date}">
+          <div class="panel-head"><div><div class="panel-title">${d.day}</div><div class="panel-kicker">${d.condition}</div></div><div style="font-size:27px">${d.icon}</div></div>
+          <div style="display:flex;justify-content:space-between;align-items:end"><div><span style="font-size:11px;color:var(--muted)">Low</span><div style="font-size:28px;font-weight:850">${d.min}°</div></div><div style="text-align:right"><span style="font-size:11px;color:var(--muted)">High</span><div style="font-size:28px;font-weight:850">${d.max}°</div></div></div>
+          <div class="range"><i style="width:${40+(i*7)}%"></i></div>
+          <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:10px"><span>Humidity ${d.humidity}%</span><span>Rain ${d.rain}%</span></div>
+        </div>`).join("");
+      document.querySelectorAll("[data-select-date]").forEach(card=>card.addEventListener("click",()=>{$("datePicker").value=card.dataset.selectDate;syncFromDate(card.dataset.selectDate);showPage("overview")}));
+    }
+    function renderHourly(){
+      const hours=[["06:00","13°","☁️"],["09:00","16°","⛅"],["12:00","20°","🌤️"],["15:00","22°","☀️"],["18:00","18°","⛅"],["21:00","15°","☁️"]];
+      $("hourlyPanel").innerHTML=hours.map(h=>`<div class="forecast-day" style="cursor:default"><div class="day">${h[0]}</div><div class="weather-symbol">${h[2]}</div><strong style="font-size:20px">${h[1]}</strong><div style="font-size:10px;color:var(--muted);margin-top:7px">Humidity ${58+Math.floor(Math.random()*9)}%</div></div>`).join("");
+    }
+    function makeChart(targetId, values, labels){
+      const width=760, height=230, padL=34,padR=12,padT=18,padB=26;
+      const min=Math.min(...values)-2,max=Math.max(...values)+2;
+      const pts=values.map((v,i)=>{
+        const x=padL+(i*(width-padL-padR)/(values.length-1));
+        const y=padT+(max-v)*(height-padT-padB)/(max-min);
+        return [x,y];
+      });
+      const line=pts.map(p=>p.join(",")).join(" ");
+      const area=`${pts[0][0]},${height-padB} ${line} ${pts[pts.length-1][0]},${height-padB}`;
+      let grid="";
+      for(let i=0;i<4;i++){
+        const y=padT+i*(height-padT-padB)/3;
+        grid+=`<line x1="${padL}" y1="${y}" x2="${width-padR}" y2="${y}" class="chart-grid-line"/>`;
+      }
+      let points=pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.4" class="chart-point"/>`).join("");
+      let ticks=labels.map((l,i)=>{
+        const x=padL+(i*(width-padL-padR)/(labels.length-1));
+        return `<text x="${x}" y="${height-7}" text-anchor="middle" class="axis">${l}</text>`;
+      }).join("");
+      $(targetId).innerHTML=`<svg viewBox="0 0 ${width} ${height}" class="chart-svg" role="img" aria-label="Temperature trend"><defs><linearGradient id="fillArea" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#72f2da" stop-opacity=".25"/><stop offset="100%" stop-color="#72f2da" stop-opacity="0"/></linearGradient></defs>${grid}<polygon points="${area}" class="chart-fill"/><polyline points="${line}" class="chart-line"/>${points}${ticks}</svg>`;
+    }
+    function syncLocation(name){
+      const key=Object.keys(demoLocations).find(k=>k.toLowerCase()===name.toLowerCase()) || "Melbourne, VIC";
+      currentLocation=key;
+      const data=demoLocations[key];
+      $("heroLocation").textContent=key;
+      $("heroTemp").textContent=data.temp+"°";
+      $("heroCondition").textContent=data.condition;
+      $("feelsLike").textContent=(data.temp-(data.humidity>70?1:0))+"°";
+      $("windText").textContent=data.wind;
+      $("humidityText").textContent=data.humidity+"%";
+      $("heroMin").textContent=data.min+"°"; $("heroMax").textContent=data.max+"°"; $("heroRain").textContent=data.rain+"%";
+      $("metricRange").textContent=data.min+"–"+data.max+"°"; $("metricHumidity").textContent=data.humidity+"%"; $("metricRain").textContent=data.rain+"%";
+      $("detailMin").textContent=data.min+"°"; $("detailMax").textContent=data.max+"°"; $("detailHum").textContent=data.humidity+"%"; $("detailRain").textContent=data.rain+"%";
+      $("hero").style.backgroundImage=`url("${pickWeatherImage(data)}")`;
+      $("hero").animate([{filter:"brightness(.75)"},{filter:"brightness(1)"}],{duration:550,easing:"ease-out"});
+      syncActivity(data);
+    }
+    function syncActivity(data){
+      $("suitRing").style.setProperty("--score",data.score+"%");
+      $("suitScore").textContent=data.score;
+      $("activityTitle").textContent=data.activity+" is looking "+(data.score>=80?"strong":"mixed")+".";
+      $("activityCopy").textContent=data.activityCopy;
+      $("activityTag").textContent=data.score>=80?"GOOD OUTLOOK":"CAUTION";
+      $("activityTag").className="tag "+(data.score>=80?"success":"warn");
+    }
+    function syncFromDate(date){
+      const d=daily.find(x=>x.date===date)||daily[0];
+      $("heroDateText").textContent=new Date(date+"T00:00:00").toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+      const base=demoLocations[currentLocation];
+      const data={...base,temp:Math.round((d.min+d.max)/2),min:d.min,max:d.max,humidity:d.humidity,rain:d.rain,condition:d.condition,icon:d.icon};
+      $("heroTemp").textContent=data.temp+"°"; $("heroCondition").textContent=data.condition;
+      $("feelsLike").textContent=Math.max(data.min,data.temp-(data.humidity>70?1:0))+"°";
+      $("humidityText").textContent=data.humidity+"%"; $("heroMin").textContent=data.min+"°"; $("heroMax").textContent=data.max+"°"; $("heroRain").textContent=data.rain+"%";
+      $("metricRange").textContent=data.min+"–"+data.max+"°"; $("metricHumidity").textContent=data.humidity+"%"; $("metricRain").textContent=data.rain+"%";
+      $("detailDate").textContent=new Date(date+"T00:00:00").toLocaleDateString("en-AU",{day:"2-digit",month:"short",year:"numeric"}).toUpperCase();
+      $("detailMin").textContent=data.min+"°"; $("detailMax").textContent=data.max+"°"; $("detailHum").textContent=data.humidity+"%"; $("detailRain").textContent=data.rain+"%";
+      $("hero").style.backgroundImage=`url("${pickWeatherImage(data)}")`;
+      if(data.rain>=60) $("activityTag").textContent="CAUTION";
+      toast("Forecast updated",`${currentLocation} · ${d.day} · ${d.condition}`,"☁");
+    }
+    function renderFavorites(filter=""){
+      const list=Object.entries(demoLocations).filter(([name])=>name.toLowerCase().includes(filter.toLowerCase())).slice(0,6);
+      const html=list.map(([name,d])=>`<div class="location-card"><div class="left"><div class="loc-icon">${d.icon}</div><div><strong>${name}</strong><small>${d.condition} · ${d.temp}° · rain ${d.rain}%</small></div></div><button class="tiny-btn" data-open-loc="${name}">Open</button></div>`).join("");
+      $("favoritePreview").innerHTML=html || `<div class="empty">No saved location matches this filter.</div>`;
+      if($("locationGrid")) $("locationGrid").innerHTML=list.map(([name,d])=>`<div class="panel"><div class="location-card" style="border:0;background:transparent;padding:0"><div class="left"><div class="loc-icon">${d.icon}</div><div><strong>${name}</strong><small>${d.condition} · ${d.min}–${d.max}° · humidity ${d.humidity}%</small></div></div><button class="tiny-btn" data-open-loc="${name}">Open forecast</button></div><div style="display:flex;justify-content:space-between;margin-top:16px"><span class="tag">${d.wind}</span><span class="tag success">${d.score}% activity fit</span></div></div>`).join("");
+      document.querySelectorAll("[data-open-loc]").forEach(btn=>btn.addEventListener("click",()=>{syncLocation(btn.dataset.openLoc); $("locationSearch").value=btn.dataset.openLoc; showPage("overview")}));
+    }
+    function renderUsers(){
+      const users=[
+        {name:"Minindu Baranasuriya",email:"minindu@example.com",role:"Standard",loc:"Melbourne, VIC",status:"Active",last:"2 min ago"},
+        {name:"Ava Mitchell",email:"ava@example.com",role:"Standard",loc:"Sydney, NSW",status:"Active",last:"8 min ago"},
+        {name:"Noah Lee",email:"noah@example.com",role:"Standard",loc:"Perth, WA",status:"Active",last:"13 min ago"},
+        {name:"System Administrator",email:"admin@weather.local",role:"Admin",loc:"All Australia",status:"Active",last:"Just now"},
+        {name:"Mia Chen",email:"mia@example.com",role:"Standard",loc:"Hobart, TAS",status:"Suspended",last:"2 days ago"}
+      ];
+      const search=($("userSearch").value||"").toLowerCase(), filter=$("userFilter").value;
+      const filtered=users.filter(u=>(u.name.toLowerCase().includes(search)||u.email.toLowerCase().includes(search))&&(filter==="All roles"||u.role===filter));
+      $("usersTable").innerHTML=filtered.map(u=>`<tr><td><div class="user-row"><div class="avatar">${u.name.split(" ").map(x=>x[0]).slice(0,2).join("")}</div><div><strong>${u.name}</strong><div style="font-size:9px;color:var(--muted);margin-top:2px">${u.email}</div></div></div></td><td><span class="tag ${u.role==="Admin"?"warn":""}">${u.role}</span></td><td>${u.loc}</td><td><span class="tag ${u.status==="Active"?"success":"danger"}">${u.status}</span></td><td>${u.last}</td><td><button class="tiny-btn" onclick="toast('User action','Action stub ready for your Go backend.','↗')">Manage</button></td></tr>`).join("");
+    }
+    function renderLogs(){
+      const logs=[
+        ["21:19","BOM refresh completed","8 locations updated concurrently · 2.8s"],
+        ["21:16","Announcement published","Scheduled maintenance notice visible to standard users"],
+        ["21:12","Cache write completed","Historical forecast persisted successfully"],
+        ["21:08","User login","Standard user authentication accepted"],
+        ["20:56","Source check","BOM endpoint responsive"]
+      ];
+      $("adminLogs").innerHTML=logs.map(x=>`<div class="log"><div class="log-time">${x[0]}</div><div class="log-copy"><strong>${x[1]}</strong><p>${x[2]}</p></div></div>`).join("");
+    }
+    function showPage(page){
+      if((page==="admin"||page==="users") && currentRole!=="admin"){
+        toast("Access denied","This function is reserved for administrator accounts.","!");
+        return;
+      }
+      currentPage=page;
+      document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+      const target=$("page-"+page);
+      if(target) target.classList.add("active");
+      document.querySelectorAll(".nav-btn[data-page],.mobile-bottom button[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
+      $("crumb").textContent=navLabels[page]||"Workspace";
+      if(page==="users") renderUsers();
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
+    function openModal(title, body){
+      $("modalTitle").textContent=title;
+      $("modalBody").innerHTML=body;
+      $("modalBackdrop").classList.add("show");
+    }
+    function closeModal(){ $("modalBackdrop").classList.remove("show") }
+    function logout(){
+      $("app").classList.add("hidden");
+      $("auth").classList.remove("hidden");
+      $("loginCard").classList.remove("hidden");
+      $("createCard").classList.add("hidden");
+      $("email").value=""; $("password").value="";
+      $("loginError").textContent="";
+      toast("Signed out","Your weather workspace has been closed.","↗");
+    }
+
+    // Splash
+    setTheme(themeMode);
+    setTimeout(()=>$("splash").classList.add("hide"),2300);
+
+    // Auth role switching
+    document.querySelectorAll(".role-switch button").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        document.querySelectorAll(".role-switch button").forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+        currentRole=btn.dataset.role;
+      });
+    });
+    $("fillStandard").onclick=()=>{$("email").value="user@weather.local";$("password").value="user123";currentRole="standard";document.querySelector('.role-switch button[data-role="standard"]').click();};
+    $("fillAdmin").onclick=()=>{$("email").value="admin@weather.local";$("password").value="admin123";currentRole="admin";document.querySelector('.role-switch button[data-role="admin"]').click();};
+    $("togglePassword").onclick=()=>{$("password").type=$("password").type==="password"?"text":"password";$("togglePassword").textContent=$("password").type==="password"?"show":"hide"};
+    $("createAccountLink").onclick=()=>{$("loginCard").classList.add("hidden");$("createCard").classList.remove("hidden")};
+    $("backToLogin").onclick=()=>{$("createCard").classList.add("hidden");$("loginCard").classList.remove("hidden")};
+    $("createAccountBtn").onclick=()=>{
+      const name=$("newFirst").value.trim(), email=$("newEmail").value.trim(), p1=$("newPass").value, p2=$("newPass2").value;
+      if(!name||!email||!p1||p1!==p2){$("createMsg").textContent="Please complete all fields and make sure both passwords match.";return}
+      $("createMsg").textContent="";
+      $("email").value=email; $("password").value=p1;
+      $("createCard").classList.add("hidden"); $("loginCard").classList.remove("hidden");
+      toast("Account created","Prototype workspace created. Sign in to continue.","✓");
+    };
+
+    $("loginBtn").onclick=()=>{
+      const e=$("email").value.trim(), p=$("password").value;
+      const valid=(currentRole==="admin" && e==="admin@weather.local" && p==="admin123") || (currentRole==="standard" && e==="user@weather.local" && p==="user123");
+      if(!valid){$("loginError").textContent=currentRole==="admin"?"Demo admin: admin@weather.local / admin123":"Demo standard: user@weather.local / user123";return}
+      $("loginError").textContent="";
+      $("auth").classList.add("hidden");$("app").classList.remove("hidden");
+      $("profileName").textContent=currentRole==="admin"?"System Administrator":"Minindu";
+      $("profileRole").textContent=currentRole==="admin"?"Administrator":"Standard user";
+      $("avatarMini").textContent=currentRole==="admin"?"SA":"MU";
+      document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",currentRole!=="admin"));
+      document.querySelectorAll(".admin-only-page").forEach(x=>x.classList.toggle("hidden",currentRole!=="admin"));
+      renderForecastStrip();renderLargeForecast();renderHourly();renderFavorites();renderLogs();renderUsers();
+      syncLocation(currentLocation);
+      makeChart("overviewChart",[14,13,13,14,16,18,20,21,22,21,19,17,16,15],["06","08","10","12","14","16","18","20"]);
+      makeChart("insightChart",[16,17,17.3,18,17.2,18.5,19,18.4,17.7,18.8,17.5,18.3],["1","4","7","10","13","16","19","22","25","28","30",""]);
+      showPage("overview");
+      toast("Welcome back",`Signed in as ${currentRole==="admin"?"Administrator":"Standard user"}.`,`✓`);
+    };
+
+    // Navigation
+    document.querySelectorAll("[data-page]").forEach(btn=>btn.addEventListener("click",()=>showPage(btn.dataset.page)));
+    $("logoutBtn").onclick=logout;
+    $("themeBtn").onclick=cycleTheme;
+    $("themeSide").onclick=cycleTheme;
+    $("authTheme").onclick=cycleTheme;
+    $("dismissAnnouncement").onclick=()=>{$("announcementBanner").classList.add("hidden");toast("Announcement dismissed","The system notice was dismissed for this session.","✓")};
+    $("notifyBtn").onclick=()=>openModal("Alert center",`
+      <div class="alert-banner" style="margin-top:0"><div style="display:flex;gap:12px"><span class="alert-dot"></span><div><strong>Scheduled maintenance</strong><p>Read-only mode may occur tonight. Cached weather remains available.</p></div></div><span class="tag warn">INFO</span></div>
+      <div class="alert-banner" style="margin-bottom:0;border-color:rgba(255,113,135,.25);background:rgba(255,113,135,.06)"><div style="display:flex;gap:12px"><span class="alert-dot" style="background:var(--danger)"></span><div><strong>Storm threshold monitor</strong><p>Darwin currently sits near the configured rainfall alert threshold.</p></div></div><span class="tag danger">WATCH</span></div>
+    `);
+
+    $("locationSearch").addEventListener("change",()=>{syncLocation($("locationSearch").value);});
+    $("datePicker").addEventListener("change",()=>syncFromDate($("datePicker").value));
+    $("favSearch").addEventListener("input",e=>renderFavorites(e.target.value));
+    $("forecastSearch").addEventListener("change",()=>{syncLocation($("forecastSearch").value);showPage("forecast")});
+    $("forecastView").addEventListener("change",e=>{$("hourlyPanel").style.display=e.target.value==="Hourly"?"flex":"flex";toast("View switched",`${e.target.value} forecast mode selected.`,"◫")});
+    $("refreshUserForecast").onclick=()=>{toast("Forecast refreshed","Interface is ready to receive fresh data from your Go endpoint.","↻")};
+    $("manualRefresh").onclick=()=>{toast("Manual BOM refresh triggered","Admin request queued. Replace this stub with your Go REST refresh call.","↻")};
+    $("sourceCheck").onclick=()=>toast("Source verification passed","BOM / forecast endpoint responded in 2.8 seconds.","✓");
+    $("livePreview").onclick=()=>{currentRole="admin";showPage("overview");toast("Live preview","Admin is previewing the standard-user weather dashboard.","◉")};
+    $("impersonateBtn").onclick=()=>{currentRole="standard";document.querySelectorAll(".admin-only").forEach(x=>x.classList.add("hidden"));document.querySelectorAll(".admin-only-page").forEach(x=>x.classList.add("hidden"));$("profileName").textContent="Minindu";$("profileRole").textContent="Standard user";$("avatarMini").textContent="MU";showPage("overview");toast("Impersonation mode","You are previewing the dashboard as a standard user.","◉")};
+    $("addLocationBtn").onclick=()=>openModal("Add saved location",`
+      <div class="field"><label>Search location</label><input id="modalLoc" class="input" list="locationOptions" placeholder="City, postcode or coordinates"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="ghost-btn" onclick="closeModal()">Cancel</button><button class="primary-btn" style="width:auto" onclick="const v=document.getElementById('modalLoc').value.trim(); if(v){closeModal();toast('Location saved',v+' added to the favourites workspace.','★')}">Save location</button></div>
+    `);
+    $("activityBtn").onclick=()=>openModal("Choose outdoor activity",`
+      <div class="activity-grid">
+        ${["Cycling","Beach walk","Running","Hiking","Photography","Picnic","Fishing","Sightseeing"].map(a=>`<button class="activity" onclick="selectedActivity='${a}';closeModal();toast('Activity updated','${a} suitability will be recalculated when the live forecast is connected.','◎')"><div class="emoji">${{Cycling:"🚴", "Beach walk":"🏖️",Running:"🏃",Hiking:"🥾",Photography:"📷",Picnic:"🧺",Fishing:"🎣",Sightseeing:"🗺️"}[a]}</div><strong>${a}</strong><div class="score">Select</div></button>`).join("")}
+      </div>
+    `);
+    $("profileMini").onclick=()=>openModal("Account centre",`
+      <div class="notice-card"><div class="notice-copy"><div class="notice-icon"><svg viewBox="0 0 24 24"><use href="#i-user"></use></svg></div><div><strong>${$("profileName").textContent}</strong><p>${$("profileRole").textContent} · Default location ${currentLocation}</p></div></div></div>
+      <div class="toggle-row"><div><strong style="font-size:11px">Weather alerts</strong><div style="font-size:9px;color:var(--muted)">Receive configured threshold notifications.</div></div><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+      <div class="toggle-row"><div><strong style="font-size:11px">Cached-data banner</strong><div style="font-size:9px;color:var(--muted)">Show when the application is using cached weather.</div></div><label class="toggle"><input type="checkbox" checked><span class="slider"></span></label></div>
+    `);
+
+    $("announceAction").onclick=()=>openModal("Broadcast system announcement",`
+      <div class="field"><label>Headline</label><input id="announceTitle" class="input" value="Scheduled maintenance"></div>
+      <div class="field"><label>Message</label><textarea id="announceText" class="input" rows="4" style="resize:vertical">Weather data services may briefly enter read-only mode tonight.</textarea></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="ghost-btn" onclick="closeModal()">Cancel</button><button class="primary-btn" style="width:auto" onclick="document.getElementById('announcementBanner').classList.remove('hidden');closeModal();toast('Announcement broadcast','The new notice is now visible to standard users.','📢')">Publish</button></div>
+    `);
+    $("thresholdAction").onclick=()=>openModal("Alert threshold manager",`
+      <p style="font-size:11px;color:var(--muted);line-height:1.6">Use the full threshold panel on the admin console to configure temperature, rainfall and wind conditions. These values become the policy surface for the backend alert engine.</p>
+      <button class="primary-btn" onclick="closeModal();showPage('admin')">Open controls</button>
+    `);
+    $("usersAction").onclick=()=>showPage("users");
+    $("logsAction").onclick=()=>{showPage("admin");setTimeout(()=>document.getElementById("adminLogs").scrollIntoView({behavior:"smooth"}),150)};
+    $("viewAllLogs").onclick=()=>toast("Log viewer","Full system log paging can be wired to your SQLite / structured log endpoint.","▤");
+    $("saveThresholds").onclick=()=>toast("Thresholds saved","Temperature, rain and wind policies updated in the UI model.","✓");
+    $("jsonExport").onclick=()=>{
+      const payload={location:currentLocation,date:$("datePicker").value,source:"BOM / Access-G via Open-Meteo",forecast:daily};
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+      const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="atmos-weather-export.json";a.click();URL.revokeObjectURL(a.href);toast("JSON exported","Forecast data downloaded as a structured file.","↓");
+    };
+    $("reportSnapshot").onclick=()=>toast("Snapshot prepared","This UI stub is ready for a print-to-PDF or server-side report generator.","▧");
+    document.querySelectorAll(".export-btn").forEach(btn=>btn.addEventListener("click",()=>{
+      const rows=[["date","location","min_c","max_c","humidity","rain_probability","condition"],...daily.map(d=>[d.date,currentLocation,d.min,d.max,d.humidity,d.rain,d.condition])];
+      const csv=rows.map(r=>r.join(",")).join("\\n");
+      const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="atmos-weather-forecast.csv";a.click();URL.revokeObjectURL(a.href);toast("CSV exported","Displayed forecast rows exported successfully.","↓");
+    }));
+    $("exportUsers").onclick=()=>toast("User export ready","Admin user export is ready to connect to your backend endpoint.","↓");
+    $("userSearch").addEventListener("input",renderUsers);
+    $("userFilter").addEventListener("change",renderUsers);
+    $("mobileMenu").onclick=()=>toast("Navigation","Use the bottom navigation on smaller screens.","☰");
+    $("closeModal").onclick=closeModal;
+    $("modalBackdrop").addEventListener("click",e=>{if(e.target.id==="modalBackdrop")closeModal()});
+    document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
+
+    // Initial hidden states
+    document.querySelectorAll(".admin-only").forEach(x=>x.classList.add("hidden"));
+    document.querySelectorAll(".admin-only-page").forEach(x=>x.classList.add("hidden"));
+    if(themeMode==="light") document.body.classList.add("theme-light");
+
+    // Auto rotate the hero background so condition images behave as a live visual layer.
+    setInterval(()=>{
+      if($("app").classList.contains("hidden")) return;
+      const d=demoLocations[currentLocation];
+      $("hero").style.backgroundImage=`url("${pickWeatherImage(d)}")`;
+    },12000);
+  </script>
+</body>
+</html>
